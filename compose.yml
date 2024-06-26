@@ -1,0 +1,149 @@
+name: "template-api"
+
+services:
+  db:
+    image: postgres:16-alpine
+    platform: linux/amd64
+    container_name: template-db
+    ports:
+      - '30432:5432'
+    env_file:
+      - ./.env
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: profmcdan/template-api
+    # command: daphne -b 0.0.0.0 -p 12007 core.asgi:application
+    command: python3 manage.py runserver 0.0.0.0:30000
+    volumes:
+      - ./app:/app
+    expose:
+      - "30000"
+    scale: 1
+    env_file:
+      - ./.env
+    restart: always
+    depends_on:
+      - db
+      - redis
+    networks:
+      - default
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    ports:
+      - "30001:30001"
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/amd64
+    ports:
+      - "30379:6379"
+    volumes:
+      - redis-data:/data
+    env_file:
+      - ./.env
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    platform: linux/amd64
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=root
+      - HTTP_PASSWORD=qwerty
+      - REDIS_DB=0
+    ports:
+      - "30081:8081"
+    depends_on:
+      - redis
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/celery/Dockerfile-celery
+    command: celery --broker=${REDIS_URL} flower --port=5555
+    ports:
+      - "30555:5555"
+    env_file:
+      - ./.env
+    depends_on:
+      - api
+      - redis
+    networks:
+      - default
+
+#  elasticsearch:
+#    image: elasticsearch:7.9.1
+#    platform: linux/amd64
+#    container_name: elasticsearch
+#    ports:
+#      - "9200:9200"
+#      - "9300:9300"
+#    volumes:
+#      - el_data:/usr/share/elasticsearch/data/
+#      - ./elk-config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+#    environment:
+#      - discovery.type=single-node
+#      - http.host=0.0.0.0
+#      - transport.host=0.0.0.0
+#      - xpack.security.enabled=false
+#      - xpack.monitoring.enabled=false
+#      - cluster.name=elasticsearch
+#      - bootstrap.memory_lock=true
+#    networks:
+#      - elk
+#
+#
+#  logstash:
+#    image: logstash:7.9.1
+#    platform: linux/amd64
+#    container_name: logstash
+#    ports:
+#      - "5044:5044"
+#      - "9600:9600"
+#    volumes:
+#      - ./elk-config/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+#      - ./elk-config/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+#      - ls_data:/usr/share/logstash/data
+#    networks:
+#      - elk
+#    depends_on:
+#      - elasticsearch
+#
+#  kibana:
+#    image: kibana:7.9.1
+#    platform: linux/amd64
+#    container_name: kibana
+#    ports:
+#      - "5601:5601"
+#    volumes:
+#      - ./elk-config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+#      - kb_data:/usr/share/kibana/data
+#    networks:
+#      - elk
+#    depends_on:
+#      - elasticsearch
+
+networks:
+  default:
+    driver: bridge
+
+
+volumes:
+  db-data:
+  redis-data:
