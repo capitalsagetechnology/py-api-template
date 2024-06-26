@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from common.kgs import generate_unique_id
 from common.models import AuditableModel
 
-from .enums import TOKEN_TYPE, USER_ROLE_CHOICES
+from .enums import TOKEN_TYPE, ROLE_OPTIONS
 from .managers import CustomUserManager, TokenManager
 
 
@@ -24,7 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     lastname = models.CharField(max_length=255)
     phone = models.CharField(max_length=17, blank=True, null=True)
     image = models.FileField(upload_to='users/', blank=True, null=True)
-    role = models.CharField(max_length=100, choices=USER_ROLE_CHOICES)
+    role = models.CharField(max_length=100, choices=ROLE_OPTIONS)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     last_login = models.DateTimeField(null=True)
