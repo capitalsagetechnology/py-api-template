@@ -19,21 +19,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.CharField(max_length=50, primary_key=True, default=generate_unique_id, editable=False)
     email = models.EmailField(_('email address'), unique=True, db_index=True)
     password = models.CharField(max_length=600, null=True)
-    transfer_pin = models.CharField(max_length=400, null=True)
-    admin_transaction_pin = models.CharField(max_length=400, null=True)
+    transaction_pin = models.CharField(max_length=400, null=True)
     firstname = models.CharField(max_length=255)
     lastname = models.CharField(max_length=255)
-    middle_name = models.CharField(max_length=255, null=True)
     phone = models.CharField(max_length=17, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    email_verified_at = models.DateTimeField(null=True)
-    phone_verified_at = models.DateTimeField(null=True)
-    image = models.FileField(upload_to='user_images/', blank=True, null=True)
-    region = models.ForeignKey('business.Region', on_delete=models.SET_NULL, blank=True, null=True,
-                               related_name='users')
-    state = models.ForeignKey('business.State', on_delete=models.SET_NULL, blank=True, null=True,
-                              related_name='users')
-    lga = models.CharField(max_length=255, blank=True, null=True)
+    image = models.FileField(upload_to='users/', blank=True, null=True)
     role = models.CharField(max_length=100, choices=USER_ROLE_CHOICES)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -42,10 +32,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey('user.User', on_delete=models.SET_NULL, null=True)
     verified = models.BooleanField(default=False)
-    regional_head = models.ForeignKey('user.User', on_delete=models.SET_NULL, null=True, blank=True,
-                                      related_name='regional_reports')
-    divisional_head = models.ForeignKey('user.User', on_delete=models.SET_NULL, null=True, blank=True,
-                                        related_name='divisional_reports')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

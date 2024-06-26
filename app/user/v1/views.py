@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
-from django.db.models import Count
 from django.utils.timezone import make_aware
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -22,8 +21,8 @@ from user.models import Token, User
 from user.tasks import send_password_reset_email
 from user.utils import generate_token
 from user.v1.serializers import (CreateUserSerializer, UserSerializer, CustomObtainTokenPairSerializer,
-                                 VerifyTokenSerializer, InitPasswordResetSerializer,
-                                 CreatePasswordSerializer, PinSerializer, TokenDecodeSerializer)
+                                 VerifyTokenSerializer, InitPasswordResetSerializer, CreatePasswordSerializer,
+                                 TokenDecodeSerializer, PinSerializer)
 
 CACHE_TTL = getattr(settings, 'CACHE_TTL', DEFAULT_TIMEOUT)
 
@@ -62,7 +61,7 @@ class UserVieSets(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [DjangoFilterBackend,
                        filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['is_active', 'region', 'role', 'state', 'lga']
+    filterset_fields = ['is_active', 'role',]
     search_fields = ['email', 'firstname', 'lastname', 'phone']
     ordering_fields = ['created_at', 'email', 'firstname', 'lastname', ]
 
@@ -141,15 +140,12 @@ class UserVieSets(viewsets.ModelViewSet):
             return Response({'success': True, 'message': 'Password successfully set'}, status=status.HTTP_200_OK)
         return Response({'success': False, 'errors': serializer.errors}, status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['POST'], detail=False, serializer_class=PinSerializer, url_path='create-pin')
+    @action(methods=['POST'], detail=True, serializer_class=PinSerializer, url_path='create-pin')
     def create_pin(self, request, pk=None):
-        user = self.request.user
+        user = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if serializer.validated_data['type'] == 'Transaction':
-            user.admin_transaction_pin = make_password(serializer.validated_data['pin'])
-        elif serializer.validated_data['type'] == 'Transfer':
-            user.transfer_pin = make_password(serializer.validated_data['pin'])
+        user.transaction_pin = make_password(serializer.validated_data['pin'])
         user.save()
         return Response({'success': True, 'message': 'Pin set successfully'}, status=status.HTTP_200_OK)
 
@@ -158,14 +154,8 @@ class UserVieSets(viewsets.ModelViewSet):
         user = self.request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        is_valid = False
-        if serializer.validated_data['type'] == 'Transaction':
-            admin_transaction_pin = user.admin_transaction_pin
-            is_valid = check_password(serializer.validated_data['pin'], admin_transaction_pin) \
-                if admin_transaction_pin else False
-        elif serializer.validated_data['type'] == 'Transfer':
-            transfer_pin = user.transfer_pin
-            is_valid = check_password(serializer.validated_data['pin'], transfer_pin) if transfer_pin else False
+        transaction_pin = user.transaction_pin
+        is_valid = check_password(serializer.validated_data['pin'], transaction_pin) if transaction_pin else False
         if is_valid:
             return Response({'success': True, 'message': 'Pin is valid'}, status=status.HTTP_200_OK)
         return Response({'success': False, 'errors': 'Invalid Pin'}, status=status.HTTP_401_UNAUTHORIZED)

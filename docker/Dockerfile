@@ -54,7 +54,5 @@ COPY --chown=app ["./app", "/app"]
 COPY ./docker/dev/entrypoint.sh /entrypoint.sh
 RUN chmod +x  /entrypoint.sh
 
-RUN chown app:app /app/logs/celery.log
-
 USER app
 ENTRYPOINT ["/entrypoint.sh"]

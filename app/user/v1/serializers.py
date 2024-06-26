@@ -1,5 +1,3 @@
-import time
-
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils.crypto import get_random_string
@@ -17,23 +15,13 @@ class UserMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'firstname', 'lastname', 'email']
-        extra_kwargs = {
-            'id': {'read_only': True},
-        }
 
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'firstname', 'lastname', 'email', 'role',
-                  'verified', 'last_login', 'created_at']
-        extra_kwargs = {
-            'id': {'read_only': True},
-            'verified': {'read_only': True},
-            'last_login': {'read_only': True},
-            'created_at': {'read_only': True},
-        }
+        fields = ['id', 'firstname', 'lastname', 'email', 'role', 'image', 'verified', 'last_login', 'created_at']
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -41,8 +29,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'firstname', 'lastname', 'email', 'phone', 'role', 'address', 'region', 'lga', 'state',
-                  'regional_head', 'divisional_head')
+        fields = ('id', 'firstname', 'lastname', 'email', 'phone', 'role')
 
     def validate(self, attrs):
         email = attrs.get('email', None)
@@ -56,7 +43,6 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 return super().validate(attrs)
             except EmailNotValidError as e:
                 raise serializers.ValidationError(e)
-        # Todo: validate role hierarchy here for regional and divisional heads
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -137,7 +123,6 @@ class CreatePasswordSerializer(serializers.Serializer):
 
 class PinSerializer(serializers.Serializer):
     pin = serializers.CharField(required=True)
-    type = serializers.ChoiceField(choices=['Transaction', 'Transfer'], required=True)
 
 
 class TokenDecodeSerializer(serializers.Serializer):
