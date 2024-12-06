@@ -1,0 +1,98 @@
+name: "django-api"
+
+services:
+  db:
+    image: postgres:16-alpine
+    platform: linux/amd64
+    container_name: sagecloud-db
+    ports:
+      - '40432:5432'
+    env_file:
+      - ./.env
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+    image: capitalsage/django-api
+    # command: daphne -b 0.0.0.0 -p 12007 core.asgi:application
+    command: python3 manage.py runserver 0.0.0.0:40000
+    volumes:
+      - ./app:/app
+    expose:
+      - "40000"
+    scale: 1
+    env_file:
+      - ./.env
+    restart: always
+    depends_on:
+      - db
+      - redis
+    networks:
+      - default
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    ports:
+      - "40001:40001"
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/amd64
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    env_file:
+      - ./.env
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    platform: linux/amd64
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=root
+      - HTTP_PASSWORD=qwerty
+      - REDIS_DB=0
+    ports:
+      - "40081:8081"
+    depends_on:
+      - redis
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/celery/Dockerfile-celery
+    command: celery --broker=${REDIS_URL} flower --port=5555
+    ports:
+      - "40555:5555"
+    env_file:
+      - ./.env
+    depends_on:
+      - api
+      - redis
+    networks:
+      - default
+
+
+networks:
+  default:
+    driver: bridge
+
+
+volumes:
+  db-data:
+  redis-data:
