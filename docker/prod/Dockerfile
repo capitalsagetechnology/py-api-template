@@ -1,31 +1,64 @@
-# Pull official base image 
-FROM python:3.9-slim
+#########################################
+# BUILDER #
+########################################
 
-LABEL maintainer="danielale9291@gmail.com"
-# Set working directory
+# pull official base image
+FROM python:3.11-slim AS builder
+
+# set work directory
 WORKDIR /app
 
-# Set env variables
+# set environment variables
+ENV PIP_NO_CACHE_DIR 1
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update \ 
-    && apt-get install -y gcc python3-dev musl-dev libmagic1 libffi-dev \
-    && pip install Pillow
+RUN python -m venv /venv
+ENV VIRTUAL_ENV=/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-COPY ./app/requirements ./requirements
+# install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc python3-dev musl-dev  \
+    libmagic1 libffi-dev git netcat-traditional wkhtmltopdf
 
-# Install dependencies
-COPY ./app/requirements ./requirements
-RUN pip install --upgrade pip
-RUN pip install -r ./requirements/prod.txt --use-deprecated=legacy-resolver
+# install python dependencies
+COPY pyproject.toml pyproject.toml
+COPY poetry.lock poetry.lock
+RUN pip install poetry==1.8.2
+RUN --mount=type=secret,id=auth,target=/root/.config/pypoetry/auth.toml \
+    poetry install
 
-# Copy entrypoint.sh
+
+##############################
+# FINAL #
+##############################
+# pull official base image
+FROM python:3.11-slim AS final
+
+# create directory for the app user
+RUN mkdir -p /home/app
+
+RUN apt-get update && apt-get install -y --no-install-recommends wkhtmltopdf
+
+# create the app user
+RUN addgroup --system app && adduser --system --group app
+
+# create the appropriate directories
+ENV PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+WORKDIR /app
+
+COPY --from=builder --chown=app $VIRTUAL_ENV $VIRTUAL_ENV
+COPY --chown=app ["./app", "/app"]
+
 COPY ./docker/prod/entrypoint.sh /entrypoint.sh
+RUN chmod +x  /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
+# RUN chown app:app /app/logs/celery.log
 
-COPY ./app /app
+#EXPOSE 30001
 
-ENTRYPOINT [ "/entrypoint.sh" ]
-
+USER app
+ENTRYPOINT ["/entrypoint.sh"]

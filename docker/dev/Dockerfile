@@ -1,28 +1,62 @@
-# Pull official base image 
-FROM python:3.11-slim
+#########################################
+# BUILDER #
+########################################
 
-# Set working directory
+# pull official base image
+FROM python:3.11-slim AS builder
+
+# set work directory
 WORKDIR /app
 
-# Set env variables
+# set environment variables
+ENV PIP_NO_CACHE_DIR 1
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update \
-    && apt-get install -y gcc python3-dev musl-dev libmagic1 libffi-dev git netcat-traditional
+RUN python -m venv /venv
+ENV VIRTUAL_ENV=/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Install Dependencies
+# install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc python3-dev musl-dev wkhtmltopdf build-essential libpq-dev gcc  \
+    libmagic1 libffi-dev git netcat-traditional
+
+# install python dependencies
 COPY pyproject.toml pyproject.toml
 COPY poetry.lock poetry.lock
 RUN pip install poetry==1.8.2
-RUN poetry config virtualenvs.create false
-RUN poetry install
+RUN --mount=type=secret,id=auth,target=/root/.config/pypoetry/auth.toml \
+    poetry install
 
-# Copy entrypoint.sh
+
+##############################
+# FINAL #
+##############################
+# pull official base image
+FROM python:3.11-slim AS final
+
+# create directory for the app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN addgroup --system app && adduser --system --group app
+
+# create the appropriate directories
+ENV PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+WORKDIR /app
+
+COPY --from=builder --chown=app $VIRTUAL_ENV $VIRTUAL_ENV
+COPY --chown=app ["./app", "/app"]
+
 COPY ./docker/dev/entrypoint.sh /entrypoint.sh
+RUN chmod +x  /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
+# RUN chown app:app /app/logs/celery.log
 
-COPY ./app /app
+#EXPOSE 30001
 
-ENTRYPOINT [ "/entrypoint.sh" ]
+USER app
+ENTRYPOINT ["/entrypoint.sh"]

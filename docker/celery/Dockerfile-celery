@@ -3,7 +3,7 @@
 ########################################
 
 # pull official base image
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # set work directory
 WORKDIR /app
@@ -19,8 +19,9 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev musl-dev  \
-    libmagic1 libffi-dev git netcat-traditional
+    apt-get install -y --no-install-recommends gcc python3-dev musl-dev build-essential libpq-dev gcc \
+    libmagic1 libffi-dev git netcat-traditional wkhtmltopdf
+
 
 # install python dependencies
 COPY pyproject.toml pyproject.toml
@@ -34,10 +35,13 @@ RUN --mount=type=secret,id=auth,target=/root/.config/pypoetry/auth.toml \
 # FINAL #
 ##############################
 # pull official base image
-FROM python:3.11-slim as final
+FROM python:3.11-slim AS final
 
 # create directory for the app user
 RUN mkdir -p /home/app
+
+# install wkhtmltopdf in the final stage
+RUN apt-get update && apt-get install -y --no-install-recommends wkhtmltopdf
 
 # create the app user
 RUN addgroup --system app && adduser --system --group app
