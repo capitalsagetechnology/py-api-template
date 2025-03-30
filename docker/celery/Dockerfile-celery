@@ -19,9 +19,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev musl-dev build-essential libpq-dev gcc \
-    libmagic1 libffi-dev git netcat-traditional wkhtmltopdf
-
+    apt-get install -y --no-install-recommends gcc python3-api musl-api build-essential libpq-api gcc \
+    libmagic1 libffi-api git netcat-traditional wkhtmltopdf
 
 # install python dependencies
 COPY pyproject.toml pyproject.toml

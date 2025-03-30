@@ -20,7 +20,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/api/Dockerfile
     image: profmcdan/bizbanking-api
     # command: daphne -b 0.0.0.0 -p 60000 core.asgi:application
     command: python3 manage.py runserver 0.0.0.0:60000
@@ -76,7 +76,7 @@ services:
     build:
       context: .
       dockerfile: docker/celery/Dockerfile-celery
-    command: celery --broker=${REDIS_URL} flower --port=5555
+    command: celery --broker=${BROKER_URL} flower --port=5555
     ports:
       - "60555:5555"
     env_file:

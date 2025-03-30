@@ -19,8 +19,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev musl-dev  \
-    libmagic1 libffi-dev git netcat-traditional wkhtmltopdf
+    apt-get install -y --no-install-recommends gcc python3-api musl-api build-essential libpq-api  \
+    libmagic1 libffi-api git netcat-traditional wkhtmltopdf
 
 # install python dependencies
 COPY pyproject.toml pyproject.toml
@@ -39,6 +39,7 @@ FROM python:3.11-slim AS final
 # create directory for the app user
 RUN mkdir -p /home/app
 
+# install wkhtmltopdf in the final stage
 RUN apt-get update && apt-get install -y --no-install-recommends wkhtmltopdf
 
 # create the app user
@@ -53,7 +54,7 @@ WORKDIR /app
 COPY --from=builder --chown=app $VIRTUAL_ENV $VIRTUAL_ENV
 COPY --chown=app ["./app", "/app"]
 
-COPY ./docker/prod/entrypoint.sh /entrypoint.sh
+COPY ./docker/dev/entrypoint.sh /entrypoint.sh
 RUN chmod +x  /entrypoint.sh
 
 # RUN chown app:app /app/logs/celery.log
