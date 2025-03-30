@@ -12,4 +12,4 @@ celerybeat.pid
 app/logs/debug.log
 app/logs/celery.log
 /k8s/secrets/
-.python-version
+#.python-version
