@@ -34,6 +34,13 @@ source .venv/bin/activate
 uv sync
 ----
 
+Enable Lint Checks
+[source,bash]
+----
+pre-commit install
+pre-commit run --all-files
+----
+
 == Run Code Locally
 
 Ensure that the latest version of docker desktop is installed on your local machine. This will also install docker compose alongside automatically. Follow this link to install docker https://docs.docker.com/desktop/install/mac-install[docker installation].
