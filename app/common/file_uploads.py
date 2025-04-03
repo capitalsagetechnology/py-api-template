@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class MultiFileInput(forms.FileInput):
-
     def render(self, name, value, attrs={}):
         attrs["multiple"] = "multiple"
         return super().render(name, None, attrs=attrs)
@@ -85,7 +84,6 @@ def to_file_object(field, instance, file):
 
 
 class ArrayFileDescriptor:
-
     def __init__(self, field):
         self.field = field
 
@@ -108,7 +106,6 @@ class ArrayFileDescriptor:
 
 
 class ArrayFileField(ArrayField):
-
     descriptor_class = ArrayFileDescriptor
 
     def set_attributes_from_name(self, name):

@@ -3,7 +3,6 @@ from user.models import User
 
 
 class UserRoleFieldTest(TestCase):
-
     def test_valid_roles(self):
         """
         Test creating users with each valid role.

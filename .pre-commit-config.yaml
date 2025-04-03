@@ -11,6 +11,7 @@ repos:
     rev: 6.0.1
     hooks:
       - id: isort
+        args: ["--profile", "black", "--filter-files"]
 
 
   - repo: https://github.com/psf/black
@@ -23,6 +24,31 @@ repos:
     rev: 7.2.0
     hooks:
       - id: flake8
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.11.2'
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+      #Run the formatter.
+#      - id: ruff-format
+
+#  - repo: local
+#    hooks:
+#      - id: pylint
+#        name: pylint
+#        entry: poetry run pylint
+#        language: system
+#        types: [ python ]
+#        args:
+#          [
+#            "-rn", # Only display messages
+#            "-sn", # Don't display the score
+#            "--load-plugins=pylint_django", # new
+#            "--django-settings-module=core.settings", # new
+#            "--ignore=manage.py"
+#          ]
 
 #  - repo: local
 #    hooks:

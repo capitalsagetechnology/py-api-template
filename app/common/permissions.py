@@ -277,7 +277,6 @@ class IsSafeIPAddress(permissions.BasePermission):
         return [addr for addr in ip_addresses if addr]
 
     def has_permission(self, request, view):
-
         remote_addresses = self.get_client_ip(request)
         logger.info({"remote_addresses": remote_addresses})
         if settings.DEBUG:
@@ -301,7 +300,6 @@ class IsSafeInwardIPAddress(permissions.BasePermission):
         return [addr for addr in ip_addresses if addr]
 
     def has_permission(self, request, view):
-
         remote_addresses = self.get_client_ip(request)
         logger.info({"remote_addresses": remote_addresses})
         if settings.DEBUG:

@@ -4,7 +4,6 @@ from user.models import User
 
 
 class UserModelTest(TestCase):
-
     def setUp(self):
         """
         Create a test user instance for use in all test methods.

@@ -13,21 +13,27 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-from common.views import readiness_check, health_check
+from common.views import health_check, readiness_check
+from django.contrib import admin
+from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 urlpatterns = [
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/v1/doc/', SpectacularSwaggerView.as_view(url_name='schema'), name='doc'),
-    path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-    path('api/v1/api-auth/', include('rest_framework.urls')),
-    path('admin/', admin.site.urls),
-    path('__debug__/', include('debug_toolbar.urls')),
-    path('api/readiness/', readiness_check, name='readiness_check'),
-    path('api/healthz/', health_check, name='health_check'),
-    path('api/v1/auth/', include('user.v1.urls.auth')),
-    path('api/v1/users/', include('user.v1.urls.users')),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/v1/doc/", SpectacularSwaggerView.as_view(url_name="schema"), name="doc"),
+    path(
+        "api/v1/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"
+    ),
+    path("api/v1/api-auth/", include("rest_framework.urls")),
+    path("admin/", admin.site.urls),
+    path("__debug__/", include("debug_toolbar.urls")),
+    path("api/readiness/", readiness_check, name="readiness_check"),
+    path("api/healthz/", health_check, name="health_check"),
+    path("api/v1/auth/", include("user.v1.urls.auth")),
+    path("api/v1/users/", include("user.v1.urls.users")),
 ]
