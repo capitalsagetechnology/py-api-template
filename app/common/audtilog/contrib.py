@@ -15,6 +15,7 @@ SENSITIVE_KEYS = [
 ]
 
 logger = logging.getLogger(__name__)
+# settings.configure()
 
 if hasattr(settings, "API_LOGGER_EXCLUDE_KEYS"):
     if type(settings.DRF_API_LOGGER_EXCLUDE_KEYS) in (list, tuple):
