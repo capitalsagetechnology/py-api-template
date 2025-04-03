@@ -1,6 +1,6 @@
-= Agency Central Auth API Microservice.
+= Template API Microservice.
 Daniel Ale <d.ale@capitalsage.ng>
-1.0, May 18, 2024: Auth API Microservice Readme...
+3.0, April 03, 2025: API Microservice Readme...
 :toc:
 :icons: font
 :url-quickref: https://github.com/capitalsagetechnology/agency-central-auth-api
@@ -85,4 +85,3 @@ The other codebases that are related to this one are
 ____
 Happy Coding
 ____
-

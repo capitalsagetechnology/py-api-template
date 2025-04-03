@@ -31,6 +31,8 @@ services:
     scale: 1
     env_file:
       - ./.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings
     restart: always
     depends_on:
       - db
@@ -79,6 +81,23 @@ services:
       - ./.env
     depends_on:
       - api
+      - redis
+
+  test:
+    build:
+      context: .
+      dockerfile: docker/test/Dockerfile-test
+    container_name: api-test-runner
+    command: pytest
+    volumes:
+      - ./app:/app
+    env_file:
+      - ./.env
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings_test
+    restart: no
+    depends_on:
+      - db
       - redis
 
 volumes:
