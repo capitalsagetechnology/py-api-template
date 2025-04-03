@@ -47,6 +47,20 @@ docker compose up --build
 
 _Access the API doc on http://localhost:60001/api/v1/doc[API Doc]_
 
+=== Run Unit Tests
+In order to run tests you need to do the following
+[source,bash]
+----
+docker compose run api pytest
+----
+
+Alternatively, you can following the following approach.
+----
+docker compose build
+docker compose run test
+----
+
+Note also that when you run ```docker compose up --build``` the test service also runs once. You can monitor from the logs
 
 === Manage Migrations
 Whenever you make changes to models, you need to generate migrations locally before pushing your code to the repo. In order to generate migrations, kindly run the following command in another terminal window while your main app is also running
