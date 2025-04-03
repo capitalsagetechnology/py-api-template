@@ -18,3 +18,11 @@ class EnumCharField(serializers.CharField):
             except AttributeError:
                 raise serializers.ValidationError(f"Invalid enum value: {data}")
         return None
+
+
+class EmptySerializer(serializers.Serializer):
+    pass
+
+
+class OTPSerializer(serializers.Serializer):
+    otp = serializers.CharField(required=True)

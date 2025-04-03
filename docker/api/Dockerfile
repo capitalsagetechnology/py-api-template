@@ -1,65 +1,42 @@
-#########################################
-# BUILDER #
-########################################
+FROM python:3.13-slim
 
-# pull official base image
-FROM python:3.11-slim AS builder
+ENV USER=appuser \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_PROJECT_ENVIRONMENT=/usr/local
 
-# set work directory
-WORKDIR /app
+RUN apt-get update && apt-get install --no-install-recommends -y curl gcc python3-dev musl-dev  \
+    build-essential libpq-dev libmagic1 libffi-dev git netcat-traditional wkhtmltopdf \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -s /bin/bash $USER
 
-# set environment variables
-ENV PIP_NO_CACHE_DIR 1
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+COPY --from=ghcr.io/astral-sh/uv:0.5.5 /uv /uvx /bin/
 
-RUN python -m venv /venv
-ENV VIRTUAL_ENV=/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV APP_DIR=/home/$USER/src
+WORKDIR $APP_DIR
 
-# install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-api musl-api build-essential libpq-api  \
-    libmagic1 libffi-api git netcat-traditional wkhtmltopdf
-
-# install python dependencies
 COPY pyproject.toml pyproject.toml
-COPY poetry.lock poetry.lock
-RUN pip install poetry==1.8.2
-RUN --mount=type=secret,id=auth,target=/root/.config/pypoetry/auth.toml \
-    poetry install
+COPY uv.lock uv.lock
 
+RUN --mount=type=cache,target=/home/$USER/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project
 
-##############################
-# FINAL #
-##############################
-# pull official base image
-FROM python:3.11-slim AS final
+COPY app $APP_DIR
 
-# create directory for the app user
-RUN mkdir -p /home/app
+RUN --mount=type=cache,target=/home/$USER/.cache/uv \
+    uv sync --frozen
 
-# install wkhtmltopdf in the final stage
-RUN apt-get update && apt-get install -y --no-install-recommends wkhtmltopdf
+ENV PYTHONPATH=$APP_DIR
 
-# create the app user
-RUN addgroup --system app && adduser --system --group app
+RUN chown -R "$USER":"$USER" $APP_DIR
+USER $USER
 
-# create the appropriate directories
-ENV PYTHONUNBUFFERED=1 \
-    VIRTUAL_ENV=/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-WORKDIR /app
+# Copy the entrypoint script and make it executable
+COPY ./docker/api/entrypoint.sh /entrypoint.sh
+#RUN chmod +x  /entrypoint.sh
 
-COPY --from=builder --chown=app $VIRTUAL_ENV $VIRTUAL_ENV
-COPY --chown=app ["./app", "/app"]
-
-COPY ./docker/dev/entrypoint.sh /entrypoint.sh
-RUN chmod +x  /entrypoint.sh
-
-# RUN chown app:app /app/logs/celery.log
-
-#EXPOSE 30001
-
-USER app
+# Command for running the app in production (via entrypoint.sh)
 ENTRYPOINT ["/entrypoint.sh"]
