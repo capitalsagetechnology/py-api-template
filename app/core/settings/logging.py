@@ -1,0 +1,89 @@
+import logging
+import os
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+from .vault import DEBUG, vault_keys
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "format": '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s", '
+            '"module": "%(module)s", "function": "%(funcName)s", "line": %(lineno)d}'
+        },
+        "colored": {
+            "()": "colorlog.ColoredFormatter",
+            "format": "%(asctime)s:%(log_color)s%(levelname)s:%(name)s:%(message)s ------------",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "log_colors": {
+                "DEBUG": "cyan",
+                "INFO": "green",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "bold_red",
+            },
+        },
+        "verbose": {
+            "format": (
+                "\n--- %(levelname)s ---\n"
+                "Timestamp: %(asctime)s\n"
+                "Message: %(message)s\n"
+                "Location: %(pathname)s:%(lineno)d in %(funcName)s\n"
+                "-------------------------------------------------\n"
+            ),
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "colored",
+        },
+        "opensearch": {
+            "level": "ERROR",
+            "class": "core.loghandler.OpenSearchLogHandler",  # Use Celery for logging
+            "formatter": "json",
+        },
+    },
+    "loggers": {
+        # Catch all Django-related logs here
+        "django": {
+            "handlers": ["console", "opensearch"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+    # Root logger for all other logs
+    "root": {
+        "handlers": ["console", "opensearch"],
+        "level": "INFO",
+    },
+}
+
+if not DEBUG:
+    sentry_sdk.init(
+        dsn=os.environ.get("SENTRY_DSN"),
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(level=logging.ERROR, event_level=logging.ERROR),
+        ],
+        traces_sample_rate=1.0,
+        send_default_pii=False,
+        environment=os.environ.get("ENVIRONMENT_INSTANCE"),
+    )
+
+DRF_API_LOGGER_EXCLUDE_KEYS = [
+    "tx_pin",
+    "bvn",
+    "nin",
+    "X-KMS-KEY",
+    "Authorization",
+    "transaction_pin",
+]
+MONGODB_LOGGER_URL = vault_keys["MONGODB_LOGGER_URL"]
+MONGODB_LOGGER_DATABASE = "app"
