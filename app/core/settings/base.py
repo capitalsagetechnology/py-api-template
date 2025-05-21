@@ -1,6 +1,5 @@
 import os
 import socket
-from email.headerregistry import Address
 from pathlib import Path
 
 from corsheaders.defaults import default_headers
@@ -134,15 +133,17 @@ TIME_ZONE = "Africa/Lagos"
 USE_I18N = True
 USE_TZ = True
 
-
 # Email Settings
-EMAIL_FROM = Address(
-    display_name="Kolomoni MFB", addr_spec=os.environ.get("SENDER_EMAIL")
-)
-EMAIL_HOST = os.environ.get("SMTP_HOST")
-EMAIL_HOST_USER = os.environ.get("SMTP_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("SMTP_PASSWORD")
-EMAIL_PORT = os.environ.get("SMTP_PORT", 587)
+DEFAULT_EMAIL_SERVICE = os.environ.get(
+    "DEFAULT_EMAIL_SERVICE", "ELASTIC"
+)  # UNIONE, ELASTIC, SENDGRID,
+
+EMAIL_FROM = os.environ.get(f"{DEFAULT_EMAIL_SERVICE}_SENDER_EMAIL")
+DEFAULT_FROM_EMAIL = f"Kolomoni MFB <{EMAIL_FROM}>"
+EMAIL_HOST = os.environ.get(f"{DEFAULT_EMAIL_SERVICE}_SMTP_HOST")
+EMAIL_HOST_USER = os.environ.get(f"{DEFAULT_EMAIL_SERVICE}_SMTP_USER")
+EMAIL_HOST_PASSWORD = os.environ.get(f"{DEFAULT_EMAIL_SERVICE}_SMTP_PASSWORD")
+EMAIL_PORT = os.environ.get(f"{DEFAULT_EMAIL_SERVICE}_SMTP_PORT", 587)
 EMAIL_USE_TLS = True
 
 # Others

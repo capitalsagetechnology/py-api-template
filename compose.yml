@@ -77,6 +77,8 @@ services:
     command: celery --broker=${CELERY_BROKER_URL} flower --port=5555
     ports:
       - "60555:5555"
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings
     env_file:
       - ./.env
     depends_on:
