@@ -4,10 +4,9 @@ from pathlib import Path
 
 from corsheaders.defaults import default_headers
 
-from .vault import vault_keys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = vault_keys["SECRET_KEY"]
+SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = int(os.environ.get("DEBUG", 1))
 APP_DESCRIPTION = os.environ.get("APP_DESCRIPTION", "Phlox Wallet API")
 

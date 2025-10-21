@@ -2,9 +2,8 @@ name: "biz-banking"
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     platform: linux/amd64
-    container_name: biz-db
     ports:
       - '60432:5432'
     env_file:
@@ -22,10 +21,9 @@ services:
       context: .
       dockerfile: docker/api/Dockerfile
     image: profmcdan/bizbanking-api
-    # command: daphne -b 0.0.0.0 -p 60000 core.asgi:application
     command: python3 manage.py runserver 0.0.0.0:60000
     volumes:
-      - ./app:/app
+      - ./app:/home/appuser/src
     expose:
       - "60000"
     scale: 1
@@ -48,27 +46,16 @@ services:
       - "60001:60001"
 
   redis:
-    image: redis:7-alpine
-    platform: linux/amd64
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    # You might pin to a specific version instead of “latest”
+    entrypoint: ["dragonfly", "--force_epoll"]
+    ulimits:
+      memlock: -1
     ports:
-      - "60379:6379"
+      - "41379:6379"
     volumes:
       - redis-data:/data
-    env_file:
-      - ./.env
-
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    platform: linux/amd64
-    environment:
-      - REDIS_HOSTS=local:redis:6379
-      - HTTP_USER=root
-      - HTTP_PASSWORD=qwerty
-      - REDIS_DB=0
-    ports:
-      - "60081:8081"
-    depends_on:
-      - redis
+    restart: unless-stopped
 
   dashboard:
     build:

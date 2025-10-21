@@ -5,7 +5,6 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-from .vault import DEBUG, vault_keys
 
 LOGGING = {
     "version": 1,
@@ -65,6 +64,7 @@ LOGGING = {
     },
 }
 
+DEBUG = int(os.environ.get("DEBUG", 1))
 if not DEBUG:
     sentry_sdk.init(
         dsn=os.environ.get("SENTRY_DSN"),
@@ -85,5 +85,5 @@ DRF_API_LOGGER_EXCLUDE_KEYS = [
     "Authorization",
     "transaction_pin",
 ]
-MONGODB_LOGGER_URL = vault_keys["MONGODB_LOGGER_URL"]
-MONGODB_LOGGER_DATABASE = "app"
+MONGODB_LOGGER_URL = os.getenv("MONGODB_LOGGER_URL")
+MONGODB_LOGGER_DATABASE = os.getenv('APP_NAME')
