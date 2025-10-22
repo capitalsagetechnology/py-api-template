@@ -33,10 +33,11 @@ ENV PYTHONPATH=$APP_DIR
 
 RUN chown -R "$USER":"$USER" $APP_DIR
 USER $USER
+RUN mkdir -p /home/$USER/run && chown -R $USER:$USER /home/$USER/run
 
 # Copy the entrypoint script and make it executable
-COPY ./docker/api/entrypoint.sh /entrypoint.sh
-#RUN chmod +x  /entrypoint.sh
+COPY ./docker/workers/entrypoint-celery.sh /entrypoint-celery.sh
+#RUN chmod +x  /entrypoint-celery.sh
 
 # Command for running the app in production (via entrypoint.sh)
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint-celery.sh"]

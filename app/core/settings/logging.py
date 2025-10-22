@@ -43,23 +43,18 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "colored",
         },
-        "opensearch": {
-            "level": "ERROR",
-            "class": "core.loghandler.OpenSearchLogHandler",  # Use Celery for logging
-            "formatter": "json",
-        },
     },
     "loggers": {
         # Catch all Django-related logs here
         "django": {
-            "handlers": ["console", "opensearch"],
+            "handlers": ["console"],
             "level": "DEBUG",
             "propagate": False,
         },
     },
     # Root logger for all other logs
     "root": {
-        "handlers": ["console", "opensearch"],
+        "handlers": ["console"],
         "level": "INFO",
     },
 }

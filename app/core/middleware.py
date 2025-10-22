@@ -2,8 +2,6 @@ import datetime
 import json
 import logging
 
-from common.audtilog.contrib import get_headers, mask_sensitive_data
-from core.tasks import send_log_to_opensearch
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.urls import Resolver404, resolve
@@ -12,6 +10,8 @@ from drf_standardized_errors.formatter import ExceptionFormatter
 from drf_standardized_errors.types import ErrorResponse
 from ipware import get_client_ip
 from sentry_sdk import capture_exception
+
+from common.audtilog.contrib import get_headers, mask_sensitive_data
 
 # Get the logger instance
 logger = logging.getLogger(__name__)
@@ -194,7 +194,4 @@ class RequestResponseLoggerMiddleware:
             )
 
             logger.info(data)
-            send_log_to_opensearch.apply_async(
-                args=["wallet-api", data], queue="logging_queue"
-            )  # Send to logging queue
         return response
