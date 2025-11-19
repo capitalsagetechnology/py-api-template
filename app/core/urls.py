@@ -34,4 +34,5 @@ urlpatterns = [
     path("__debug__/", include("debug_toolbar.urls")),
     path("api/readiness/", readiness_check, name="readiness_check"),
     path("api/healthz/", health_check, name="health_check"),
+    path('api/v1/users/', include('user.v1.urls.users'))
 ]

@@ -15,6 +15,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from workers.notifications.services import send_welcome_email_async
 from user.decorators import jwt_required
 from user.models import Token, User
 from user.tasks import send_password_reset_email
@@ -32,6 +34,19 @@ from user.v1.serializers import (
 
 CACHE_TTL = getattr(settings, "CACHE_TTL", DEFAULT_TIMEOUT)
 logger = logging.getLogger(__name__)
+
+
+class RedPandaDemoViewSet(viewsets.GenericViewSet):
+    http_method_names = ['get', 'post']
+    permission_classes = [AllowAny]
+
+    @action(methods=["post"], detail=False, serializer_class=CreateUserSerializer, url_path='redpanda-register')
+    def register_user(self, request, pk=None):
+        serializer = CreateUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = {'firstname': serializer.validated_data["firstname"], 'email': serializer.validated_data["email"]}
+        send_welcome_email_async(user)
+        return Response(user, status=status.HTTP_200_OK)
 
 
 class DecodeJwtTokenView(APIView):

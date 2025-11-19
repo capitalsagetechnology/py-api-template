@@ -1,20 +1,73 @@
 import datetime
 import json
 import logging
+import re
 
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.urls import Resolver404, resolve
+from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 from drf_standardized_errors.formatter import ExceptionFormatter
 from drf_standardized_errors.types import ErrorResponse
 from ipware import get_client_ip
-from sentry_sdk import capture_exception
 
-from common.audtilog.contrib import get_headers, mask_sensitive_data
+# from pykolofinance.audtilog.contrib import get_headers
+from sentry_sdk import capture_exception
 
 # Get the logger instance
 logger = logging.getLogger(__name__)
+
+SENSITIVE_KEYS = [
+    "tx_pin",
+    "bvn",
+    "nin",
+    "X-KMS-KEY",
+    "X_API_KEY",
+    "Authorization",
+    "AUTHORIZATION",
+    "X-API-KEY",
+    "X-Api-Key",
+    "x-api-key",
+    "transaction_pin",
+]
+
+
+def get_headers(request=None):
+    """
+    Function:       get_headers(self, request)
+    Description:    To get all the headers from request
+    """
+    regex = re.compile("^HTTP_")
+    return dict(
+        (regex.sub("", header), value)
+        for (header, value) in request.META.items()
+        if header.startswith("HTTP_")
+    )
+
+
+def mask_sensitive_data(data, mask_api_parameters=True):
+    mask_value = "***FILTERED***"
+    # Check if data is a dictionary
+    if isinstance(data, dict):
+        # Create a copy of the dictionary to avoid modifying the original
+        masked_data = {}
+        for key, value in data.items():
+            # If the key is in sensitive fields, mask the value
+            if key in SENSITIVE_KEYS:
+                masked_data[key] = mask_value
+            else:
+                # Recursively process nested structures
+                masked_data[key] = mask_sensitive_data(value, mask_api_parameters)
+        return masked_data
+
+    # If data is a list, apply the function to each item in the list
+    elif isinstance(data, list):
+        return [mask_sensitive_data(item, mask_api_parameters) for item in data]
+
+    # For other data types, return the data as is
+    else:
+        return data
 
 
 class CaptureExceptionMiddleware:
@@ -40,6 +93,7 @@ class CaptureExceptionMiddleware:
                 },
                 status=500,
             )
+        return None
 
 
 class ValidationErrorMiddleware:
@@ -135,14 +189,25 @@ class RequestResponseLoggerMiddleware:
             namespace = None
 
         request_data = {}
+
+        ignored_paths = [
+            "/api/v1/kams/wallet/bulk/wallet-creation/",
+            "api/v1/kams/wallet/bulk/terminal-profile/",
+        ]
         if request.content_type == "application/json":
             try:
-                if request.path in getattr(settings, "ENCRYPTED_ROUTE", []):
-                    request_data = request.decrypted_payload
-                else:
-                    request_data = json.loads(request.body)
-            except json.JSONDecodeError:
-                request_data = request.body.decode("utf-8")
+                try:
+                    if request.path in getattr(settings, "ENCRYPTED_ROUTE", []):
+                        request_data = request.decrypted_payload
+                    elif request.path in ignored_paths:
+                        request_data = {}
+                    else:
+                        request_data = json.loads(request.body)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    request_data = request.body.decode("utf-8")
+            except Exception as e:
+                logger.error(e)
+                request_data = {}
         elif request.content_type in [
             "multipart/form-data",
             "application/x-www-form-urlencoded",
@@ -194,4 +259,15 @@ class RequestResponseLoggerMiddleware:
             )
 
             logger.info(data)
+        return response
+
+
+class AfricaLagosTimezoneMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        timezone.activate("Africa/Lagos")  # Or dynamically per user
+        response = self.get_response(request)
+        timezone.deactivate()
         return response

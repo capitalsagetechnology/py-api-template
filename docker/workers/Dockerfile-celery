@@ -6,7 +6,8 @@ ENV USER=appuser \
     UV_PROJECT_ENVIRONMENT=/usr/local
 
 RUN apt-get update && apt-get install --no-install-recommends -y curl gcc python3-dev musl-dev  \
-    build-essential libpq-dev libmagic1 libffi-dev git netcat-traditional wkhtmltopdf pkg-config libcairo2-dev \
+    build-essential libpq-dev libmagic1 libffi-dev git netcat-traditional wkhtmltopdf pkg-config  \
+    libcairo2-dev librdkafka-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash $USER

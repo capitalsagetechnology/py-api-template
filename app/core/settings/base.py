@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "core.celery.CeleryConfig",
     # "pykolofinance",
     "user.apps.UserConfig",
+    "workers.apps.WorkersConfig",
 ]
 
 MIDDLEWARE = [

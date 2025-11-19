@@ -4,3 +4,4 @@ from .database import *  # noqa F403
 from .logging import *  # noqa F403
 from .rest import *  # noqa F403
 from .storage import *  # noqa F403
+from .kafka import *  # noqa F403

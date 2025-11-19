@@ -1,11 +1,11 @@
-name: "biz-banking"
+name: "py-template"
 
 services:
   db:
     image: postgres:17-alpine
     platform: linux/amd64
     ports:
-      - '60432:5432'
+      - '52432:5432'
     env_file:
       - ./.env
     healthcheck:
@@ -20,12 +20,11 @@ services:
     build:
       context: .
       dockerfile: docker/api/Dockerfile
-    image: profmcdan/bizbanking-api
-    command: python3 manage.py runserver 0.0.0.0:60000
+    command: python3 manage.py runserver 0.0.0.0:52000
     volumes:
       - ./app:/home/appuser/src
-    expose:
-      - "60000"
+    ports:
+      - "52000:52000"
     scale: 1
     env_file:
       - ./.env
@@ -35,15 +34,7 @@ services:
     depends_on:
       - db
       - redis
-
-  nginx:
-    image: nginx:latest
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api
-    ports:
-      - "60001:60001"
+      - redpanda
 
   redis:
     image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
@@ -52,7 +43,7 @@ services:
     ulimits:
       memlock: -1
     ports:
-      - "41379:6379"
+      - "52379:6379"
     volumes:
       - redis-data:/data
     restart: unless-stopped
@@ -63,7 +54,7 @@ services:
       dockerfile: docker/celery/Dockerfile-celery
     command: celery --broker=${CELERY_BROKER_URL} flower --port=5555
     ports:
-      - "60555:5555"
+      - "52555:5555"
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
     env_file:
@@ -88,6 +79,51 @@ services:
     depends_on:
       - db
       - redis
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    healthcheck:
+      test: [ "CMD-SHELL", "rpk cluster info --brokers=redpanda:9092 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    depends_on:
+      - redpanda
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8080:8080"
+
+  email_worker:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    command: >
+      python3 manage.py consume_email_events
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    depends_on:
+      - redpanda
 
 volumes:
   db-data:
